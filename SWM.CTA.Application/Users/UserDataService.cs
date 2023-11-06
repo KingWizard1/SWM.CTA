@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -18,7 +17,8 @@ public interface IUserDataService
     Task<User?> GetById(long id);
 }
 
-public class UserDataService : IUserDataService
+/// <summary>Provides access to user data.</summary>
+public class UserDataService : IUserDataService, IConfigurableService
 {
     private readonly UserDataServiceSettings _settings;
     private readonly ILogger<UserDataService> _logger;
@@ -32,18 +32,6 @@ public class UserDataService : IUserDataService
     {
         _settings = settings.Value;
         _logger = logger;
-        
-        // Config Validation
-        var results = new List<ValidationResult>();
-        Validator.TryValidateObject(_settings, new ValidationContext(_settings, null, null), results, true);
-        if (results.Count > 0)
-        {
-            foreach (ValidationResult validationResult in results)
-                _logger.LogError("Invalid configuration value for members '{Members}': {Reason}", 
-                    string.Join(", ", validationResult.MemberNames), validationResult.ErrorMessage ?? "No reason provided.");
-            throw new InvalidServiceConfigurationException(GetType(), _settings.GetType());
-        }
-        
     }
 
     #endregion
@@ -56,7 +44,8 @@ public class UserDataService : IUserDataService
         try
         {
             // HTTP GET
-            _logger.LogInformation("HTTP GET: {Url}", _settings.DataEndpoint);
+            httpClient.Timeout = TimeSpan.FromSeconds(_settings.DataEndpointTimeout);
+            _logger.LogInformation("HTTP GET: {Url} (Timeout: {Timeout})", _settings.DataEndpoint, httpClient.Timeout);
             HttpResponseMessage response = await httpClient.GetAsync(_settings.DataEndpoint);
 
             // If non-success
@@ -69,8 +58,9 @@ public class UserDataService : IUserDataService
             // Read content as string
             string json = await response.Content.ReadAsStringAsync();
             
-            // BUG: The received json may not be a valid structure. Let's apply a fix here so we can read it.
-            json = json.Replace(", gender:\"", ", \"gender\":\"");
+            // BUGFIX: The received json may not be a valid structure. Let's apply a fix here so we can read it.
+            if (_settings.FixInvalidJson)
+                json = json.Replace(", gender:\"", ", \"gender\":\"");
             
             // Deserialize to target type
             List<User> users = JsonSerializer.Deserialize<List<User>>(json, new JsonSerializerOptions()

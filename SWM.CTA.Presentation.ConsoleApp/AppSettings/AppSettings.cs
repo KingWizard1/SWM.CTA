@@ -1,24 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace SWM.CTA.Presentation.ConsoleApp.AppSettings;
 
-namespace SWM.CTA.Presentation.ConsoleApp.AppSettings;
-
-public class AppSettings// : IValidatableObject
+public class AppSettings
 {
  
-    // Nothing yet
+    public bool EnableParallelProcessing { get; set; }
     
-    //
-    // #region Validation
-    //
-    // public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    // {
-    //     List<ValidationResult> failedValidations = new();
-    //     
-    //     Validator.TryValidateProperty(SampleTestEndpoint, new ValidationContext(this, null, null) { MemberName = nameof(SampleTestEndpoint) },
-    //         failedValidations);
-    //
-    //     return failedValidations;
-    // }
-    //
-    // #endregion
 }

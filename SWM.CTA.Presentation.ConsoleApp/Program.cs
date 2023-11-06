@@ -1,17 +1,22 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Serilog;
 using SWM.CTA.Application.Users;
 using SWM.CTA.Domain.Users;
 using SWM.CTA.Infrastructure.Extensions;
 using SWM.CTA.Infrastructure.Services;
+using SWM.CTA.Presentation.ConsoleApp.AppSettings;
 
-public static class Program
+public static partial class Program
 {
     private static async Task Main(string[] args)
     {
         Console.WriteLine("-- Submission of SevenWestMedia Core Technical Assignment 2020-02-28 --");
         Console.WriteLine("-------------------- By Phil James for 7Plus Team ---------------------");
+        Console.WriteLine();
+        Console.WriteLine("The application will load its settings from ./AppSettings/appsettings.json.");
+        Console.WriteLine("You can modify it to change the endpoint from which user data is retrieved.");
         Console.WriteLine();
         Console.WriteLine("Press any key to start the test.");
         Console.ReadKey();
@@ -23,8 +28,16 @@ public static class Program
             IConfiguration config = _LoadConfiguration();
             IServiceProvider serviceProvider = _LoadServices(config);
 
+            IUserDataService userDataService = serviceProvider.GetRequiredService<IUserDataService>();
+            ICollection<User> users = await userDataService.GetAll();
+
+            AppSettings appSettings = serviceProvider.GetService<IOptions<AppSettings>>()?.Value 
+                                      ?? throw new MissingConfigurationException(typeof(AppSettings));
+            
             // Act
-            await _PerformAssignmentTasks(serviceProvider);
+            _PrintUsersFullName(users, 42);
+            _PrintUsersFirstNamesByAge(users, 23);
+            _PrintNumberOfGendersPerAgeAscending(users, appSettings.EnableParallelProcessing);
 
         }
         catch (Exception e)
@@ -38,6 +51,8 @@ public static class Program
         Console.ReadKey();
 
     }
+    
+    #region Application Loading
 
     private static IConfiguration _LoadConfiguration()
     {
@@ -64,61 +79,15 @@ public static class Program
         
         // Register all applicable services and their configurations
         services.AddSingleton<IUserDataService, UserDataService>();
-        services.ValidateAndAddServiceOptions<UserDataServiceSettings>(config);
+        services.AddServiceConfiguration<UserDataServiceSettings>(config);
+        
+        // Register core application configuration
+        services.AddConfiguration<AppSettings>(config);
 
         return services.BuildServiceProvider();
     }
-
-    private static async Task _PerformAssignmentTasks(IServiceProvider serviceProvider)
-    {
-
-        IUserDataService userDataService = serviceProvider.GetRequiredService<IUserDataService>();
-
-        ICollection<User> users = await userDataService.GetAll();
-        
-        // 1. Output User Id 42's Full Name
-        long idToGet = 42;
-        User? user42 = users.SingleOrDefault(u => u.Id == idToGet);
-        if (user42 != null)
-            Console.WriteLine($"1. The full name for user with id '{idToGet}' is '{user42.First} {user42.Last}'");
-        else
-            Console.WriteLine($"1. Cannot print the full name for user with id '{idToGet}': user does not exist");
-
-        Console.WriteLine();
-        
-        // 2. All user's first names, comma seperated, who are 23 years old
-        int ageToGet = 23;
-        List<User> usersByAge = users.Where(u => u.Age == ageToGet).ToList();
-        if (usersByAge.Count > 0)
-        {
-            Console.WriteLine($"2. All first names for user's who are {ageToGet} years old, comma seperated:");
-            Console.WriteLine(string.Join(", ", usersByAge.Select(u => u.First)));
-            Console.WriteLine();            
-        }
-        else
-            Console.WriteLine($"2. Cannot print first names for user's who are {ageToGet} years old: there aren't any.");
-        
-
-        // 3. The number of genders per Age, displayed from youngest to oldest.
-        var userGendersPerAgeAscending = users.GroupBy(u => u.Age)
-                                              .OrderBy(g => g.Key)
-                                              .Select(g => new
-                                              {
-                                                  Age = g.Key,
-                                                  GenderCounts = g.GroupBy(u => u.Gender)
-                                                                  .Select(genderGroup => new
-                                                                  {
-                                                                      Gender = genderGroup.Key,
-                                                                      Count = genderGroup.Count()
-                                                                  })
-                                              });
-
-        Console.WriteLine("3. The number of genders per age, displayed from youngest to oldest:");
-        foreach (var ageGroup in userGendersPerAgeAscending)
-            Console.WriteLine($"Age: {ageGroup.Age}\t\t{string.Join(", ", ageGroup.GenderCounts.Select(gc => $"\"{gc.Gender}\": {gc.Count}"))}");
-
-    }
-
+    
+    #endregion
 }
 
 
