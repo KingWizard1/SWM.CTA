@@ -77,9 +77,12 @@ public static partial class Program
 
         services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog());
         
-        // Register all applicable services and their configurations
+        // Register all application services and their configurations
         services.AddSingleton<IUserDataService, UserDataService>();
         services.AddServiceConfiguration<UserDataServiceSettings>(config);
+        
+        // Register shared dependencies
+        services.AddHttpClient("SharedHttpClient");
         
         // Register core application configuration
         services.AddConfiguration<AppSettings>(config);

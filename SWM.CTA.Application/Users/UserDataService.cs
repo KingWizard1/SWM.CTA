@@ -20,33 +20,35 @@ public interface IUserDataService
 /// <summary>Provides access to user data.</summary>
 public class UserDataService : IUserDataService, IConfigurableService
 {
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly UserDataServiceSettings _settings;
     private readonly ILogger<UserDataService> _logger;
 
     #region Construction
 
     public UserDataService(
+        IHttpClientFactory httpClientFactory,
         IOptions<UserDataServiceSettings> settings,
-        ILogger<UserDataService> logger
-    )
+        ILogger<UserDataService> logger)
     {
         _settings = settings.Value;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     #endregion
 
     #region Implementation
-
+    
     public async Task<ICollection<User>> GetAll()
     {
-        using HttpClient httpClient = new();
+        using HttpClient client = _httpClientFactory.CreateClient($"{nameof(UserDataService)}_HttpClient");
         try
         {
             // HTTP GET
-            httpClient.Timeout = TimeSpan.FromSeconds(_settings.DataEndpointTimeout);
-            _logger.LogInformation("HTTP GET: {Url} (Timeout: {Timeout})", _settings.DataEndpoint, httpClient.Timeout);
-            HttpResponseMessage response = await httpClient.GetAsync(_settings.DataEndpoint);
+            client.Timeout = TimeSpan.FromSeconds(_settings.DataEndpointTimeout);
+            _logger.LogInformation("HTTP GET: {Url} (Timeout: {Timeout})", _settings.DataEndpoint, client.Timeout);
+            HttpResponseMessage response = await client.GetAsync(_settings.DataEndpoint);
 
             // If non-success
             if (!response.IsSuccessStatusCode)
