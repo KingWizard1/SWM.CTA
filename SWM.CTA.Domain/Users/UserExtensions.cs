@@ -11,7 +11,7 @@ public static class UserExtensions
 {
     /// <summary>Joins the first and last names of the given user and returns the result.</summary>
     /// <remarks>The name will be trimmed in case either first or last name fields are empty.</remarks>
-    public static string GetFullName(this User user) => $"{user.First} {user.Last}".Trim();
+    public static string GetFullName(this User user) => $"{user.First.Trim()} {user.Last.Trim()}".Trim();
 
     /// <summary>Returns all users who are of the given age.</summary>
     public static IEnumerable<User> GetByAge(this IEnumerable<User> users, int age) => users.Where(u => u.Age == age).ToList();
