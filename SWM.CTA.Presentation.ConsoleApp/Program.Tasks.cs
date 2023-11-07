@@ -18,15 +18,14 @@ public static partial class Program
     private static void _PrintUsersFirstNamesByAge(IEnumerable<User> users, int age)
     {
         // 2. All user's first names, comma seperated, who are 23 years old
-        int ageToGet = 23;
-        ICollection<User> usersByAge = users.GetByAge(ageToGet).ToList();
+        ICollection<User> usersByAge = users.GetByAge(age).ToList();
         if (usersByAge.Count > 0)
         {
-            Console.WriteLine($"2. All first names for user's who are {ageToGet} years old, comma seperated:");
-            Console.WriteLine(string.Join(", ", usersByAge.Select(u => u.First)));
+            Console.WriteLine($"2. All first names for user's who are {age} years old, comma seperated:");
+            Console.WriteLine(string.Join(", ", usersByAge.Select(u => u.First.Trim())));
         }
         else
-            Console.WriteLine($"2. Cannot print first names for user's who are {ageToGet} years old: there aren't any.");
+            Console.WriteLine($"2. Cannot print first names for user's who are {age} years old: there aren't any.");
     }
 
     private static void _PrintNumberOfGendersPerAgeAscending(IEnumerable<User> users, bool useParallelProcessing)
